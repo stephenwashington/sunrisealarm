@@ -10,38 +10,34 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="minervaheavyindustries.sunrisealarm.MainActivity">
 
-    <TextView
-        android:text="Set the Alarm!"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/alarm_status"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:layout_marginLeft="52dp"
-        android:layout_marginStart="52dp"
-        android:layout_marginBottom="187dp" />
-
     <Button
         android:text="Set Alarm"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/set_alarm"
-        android:layout_marginLeft="13dp"
-        android:layout_marginStart="13dp"
-        android:layout_alignParentTop="true"
-        android:layout_alignLeft="@+id/textView"
-        android:layout_alignStart="@+id/textView"
-        android:layout_marginTop="74dp" />
+        android:layout_centerVertical="true"
+        android:layout_toLeftOf="@+id/alarm_status"
+        android:layout_toStartOf="@+id/alarm_status" />
 
     <Button
         android:text="Unset Alarm"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignTop="@+id/button"
+        android:layout_marginRight="23dp"
+        android:layout_marginEnd="23dp"
+        android:id="@+id/unset_alarm"
+        android:layout_alignBaseline="@+id/set_alarm"
+        android:layout_alignBottom="@+id/set_alarm"
         android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true"
-        android:layout_marginRight="40dp"
-        android:layout_marginEnd="40dp"
-        android:id="@+id/unset_alarm" />
+        android:layout_alignParentEnd="true" />
+
+    <TextView
+        android:text="Set the Alarm!"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/alarm_status"
+        android:gravity="bottom"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="66dp" />
 </RelativeLayout>
