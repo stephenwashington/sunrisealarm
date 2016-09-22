@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="minervaheavyindustries.sunrisealarm">
+    package="com.minervaheavyindustries.sunrisealarm">
 
     <application
         android:allowBackup="true"
@@ -17,6 +17,8 @@
         </activity>
 
         <receiver android:name=".AlarmReceiver" />
+
+        <activity android:name="com.minervaheavyindustries.sunrisealarm.AlarmActivity"></activity>
     </application>
 
 </manifest>
