@@ -64,4 +64,24 @@
         android:layout_marginBottom="16dp"
         android:id="@+id/set_alarm_sound" />
 
+    <Button
+        android:text="Get Location"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/set_alarm_sound"
+        android:layout_alignRight="@+id/set_alarm_sound"
+        android:layout_alignEnd="@+id/set_alarm_sound"
+        android:layout_marginBottom="32dp"
+        android:id="@+id/get_location_button" />
+
+    <TextView
+        android:text="Location has not been set!"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignLeft="@+id/alarm_status"
+        android:layout_alignStart="@+id/alarm_status"
+        android:layout_marginTop="28dp"
+        android:id="@+id/location_text" />
+
 </RelativeLayout>
