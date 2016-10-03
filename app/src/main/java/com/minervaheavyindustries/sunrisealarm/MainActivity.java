@@ -1,201 +1,170 @@
 package com.minervaheavyindustries.sunrisealarm;
 
-import android.Manifest;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
-import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.location.Location;
+import android.content.SharedPreferences;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
-import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.preference.PreferenceActivity;
+import android.preference.PreferenceFragment;
+import android.preference.PreferenceManager;
+import android.preference.RingtonePreference;
+import android.preference.SwitchPreference;
 import android.util.Log;
-import android.view.View;
-import android.widget.Button;
-import android.widget.TextView;
 
 import java.util.Calendar;
-import android.support.design.widget.Snackbar;
 
-public class MainActivity extends AppCompatActivity {
+/*TODO:
+- Add parser for manual location input, show toast if error isn't right format (lat.DD, long.DD)
+- Fix bug where editing text, then hitting okay doesn't actually save the edits
+- Fix bug where getting location for non-UTC timezones skips ahead two weeks
+- Add toasts for all preferences to increase user's awareness of what's happening
+*/
+public class MainActivity extends PreferenceActivity {
 
-    AlarmManager alarmManager;
-    TextView alarmStatus;
-    TextView ringtoneText;
-    TextView locationText;
-    Context context;
-    Intent intent;
-    PendingIntent pendingIntent;
-    Location location;
-    private View mLayout;
-
-    private static final int COARSE_LOCATION = 0;
-    private static final int FINE_LOCATION = 1;
+    private static Intent intent;
+    private static AlarmManager alarmManager;
+    private static PendingIntent pendingIntent;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        this.context = this;
-
-        intent = new Intent(this.context, AlarmReceiver.class);
+        getFragmentManager().beginTransaction().replace(android.R.id.content, new PrefsFragment()).commit();
+        intent = new Intent(this, AlarmReceiver.class);
         alarmManager = (AlarmManager)getSystemService(ALARM_SERVICE);
-        alarmStatus = (TextView)findViewById(R.id.alarm_status);
-        ringtoneText = (TextView)findViewById(R.id.ringtone_setting);
-        locationText = (TextView)findViewById(R.id.location_text);
-        location = LocationUtilities.getLocation(context);
-        if (location != null){
-            setLocationText(String.valueOf(location.getLatitude()) + ", " + String.valueOf(location.getLongitude()));
-        } else {
-            Log.d("MainActivity", "Location is null!");
+
+    }
+
+    public static class PrefsFragment extends PreferenceFragment implements SharedPreferences.OnSharedPreferenceChangeListener {
+
+        @Override
+        public void onCreate(Bundle savedInstanceState){
+            Log.d("MainActivity", "onCreate");
+            super.onCreate(savedInstanceState);
+            PreferenceManager.setDefaultValues(getActivity(), R.xml.preferences, false);
+            addPreferencesFromResource(R.xml.preferences);
+            updateAllSummaries();
         }
 
-        Uri uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-        Ringtone r = RingtoneManager.getRingtone(getApplicationContext(), uri);
-        intent.putExtra("ringtone", uri.toString());
-        setRingtoneText(r.getTitle(getApplicationContext()));
+        @Override
+        public void onResume() {
+            super.onResume();
+            Log.d("MainActivity", "onResume");
+            updateAllSummaries();
+            getPreferenceManager().getSharedPreferences().registerOnSharedPreferenceChangeListener(this);
+        }
 
-        Button setAlarm = (Button)findViewById(R.id.set_alarm);
-        Button unsetAlarm = (Button)findViewById(R.id.unset_alarm);
-        Button setAlarmSound = (Button)findViewById(R.id.set_alarm_sound);
-        Button getLocationButton = (Button)findViewById(R.id.get_location_button);
+        @Override
+        public void onPause() {
+            getPreferenceManager().getSharedPreferences().unregisterOnSharedPreferenceChangeListener(this);
+            super.onPause();
+        }
+
+        public void updateAllSummaries(){
+            updateSummary("ringtone");
+            updateSummary("offset");
+            updateSummary("location");
+        }
 
 
-        setAlarm.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v){
-                Calendar calendar = Calendar.getInstance();
-                calendar.add(Calendar.SECOND, 5);
-                setAlarmStatus("Alarm set for " + String.valueOf(calendar.getTime()));
-                pendingIntent = PendingIntent.getBroadcast(MainActivity.this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-                alarmManager.set(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
+        public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key){
+            Log.d("MainActivity", "SharedPreferenceChanged!");
+            if (key.equals("ringtone")){
+                updateSummary("ringtone");
+            } else if (key.equals("offset")){
+                updateSummary("offset");
+            } else if (key.equals("location")){
+                updateSummary("location");
+            } else if (key.equals("alarm")){
+                updateSummary("alarm");
             }
-        });
+        }
 
-        unsetAlarm.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v){
-                alarmManager.cancel(pendingIntent);
-                setAlarmStatus("Alarm off!");
-            }
-        });
+        public void updateSummary(String key){
+            SharedPreferences sp = getPreferenceManager().getSharedPreferences();
+            Log.d("MainActivity", key);
 
-        setAlarmSound.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v){
-                Intent intent2 = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
-                intent2.putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Select Alarm Ringtone");
-                intent2.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false);
-                intent2.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true);
-                intent2.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE,RingtoneManager.TYPE_ALARM);
-                startActivityForResult(intent2, 999);
-            }
-        });
+            if (key.equals("alarm")){
+                SwitchPreference switchPreference = (SwitchPreference)findPreference("alarm");
+                boolean alarmStatus = sp.getBoolean("alarm", false);
+                if (alarmStatus){
+                    // set the alarm sound
+                    String ringtonePref = sp.getString("ringtone", "");
+                    Uri ringtoneUri = Uri.parse(ringtonePref);
+                    intent.putExtra("ringtone", ringtoneUri.toString());
 
-        getLocationButton.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v){
-                if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED){
-                    requestCoarseLocationPermission();
-                } else if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
-                    requestFineLocationPermission();
-                } else{
-                    Log.d("MainActivity","Location permissions granted");
-                    location = LocationUtilities.getLocation(getApplicationContext());
-                    if (location == null){
-                        Log.d("MainActivity", "location came back null!");
-                    } else {
-                        setLocationText(String.valueOf(location.getLatitude()) + ", " + String.valueOf(location.getLongitude()));
-                    }
+                    //Set the alarm time
+                    Calendar now = Calendar.getInstance();
+                    LocationPreference lp = (LocationPreference)findPreference("location");
+                    String location = PreferenceManager.getDefaultSharedPreferences(this.getActivity()).getString("location", "38.897096, -77.036545");
+                    String[] latlong = location.split(",");
+                    double latitude = Double.valueOf(latlong[0].replaceAll("\\s+",""));
+                    double longitude = Double.valueOf(latlong[1].replaceAll("\\s+",""));
+                    Calendar sunriseUTC = SunriseCalculator.getSunrise(latitude, longitude, now);
 
+                    // Localize, set offset
+                    Calendar sunriseLocal = Calendar.getInstance();
+                    sunriseLocal.setTimeInMillis(sunriseUTC.getTimeInMillis());
+                    int sunriseOffset = PreferenceManager.getDefaultSharedPreferences(this.getActivity()).getInt("offset", 60) - 60;
+                    sunriseLocal.add(Calendar.MINUTE, sunriseOffset);
 
+                    // Set the alarm itself
+                    pendingIntent = PendingIntent.getBroadcast(getActivity(), 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+                    alarmManager.set(AlarmManager.RTC_WAKEUP, sunriseLocal.getTimeInMillis(), pendingIntent);
+
+                    // Update Preference Summary
+                    switchPreference.setSummary(sunriseLocal.getTime().toString());
+                } else {
+                    alarmManager.cancel(pendingIntent);
                 }
+
             }
-        });
-    }
+            if (key.equals("ringtone")){
+                String ringtonePref = sp.getString("ringtone", "");
+                RingtonePreference rp = (RingtonePreference)findPreference("ringtone");
 
-    private void setLocationText(String s){
-        locationText.setText(s);
-        Log.d("MainActivity", s);
-    }
+                if (ringtonePref != ""){
+                    Uri ringtoneUri = Uri.parse(ringtonePref);
+                    Ringtone ringtone = RingtoneManager.getRingtone(getActivity(), ringtoneUri);
+                    String ringtoneName = ringtone.getTitle(getActivity());
+                    rp.setSummary(ringtoneName);
+                } else {
+                    rp.setSummary("Silent");
+                }
 
-    private void setAlarmStatus(String s) {
-        alarmStatus.setText(s);
-        Log.d("MainActivity", s);
-    }
-
-    private void setRingtoneText(String s) {
-        ringtoneText.setText(s);
-        Log.d("MainActivity", s);
-    }
-
-    private void requestCoarseLocationPermission(){
-        Log.d("MainActivity","Coarse Location Permission has not been granted. Requesting permission...");
-        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_COARSE_LOCATION)){
-            Snackbar.make(mLayout, "Sunrise Alarm needs your location to calculate the sunrise", Snackbar.LENGTH_INDEFINITE)
-                    .setAction("Okay", new View.OnClickListener(){
-                        @Override
-                        public void onClick(View v){
-                            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, COARSE_LOCATION);
-                        }
-                    }).show();
-        } else{
-            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, COARSE_LOCATION);
-        }
-    }
-
-    private void requestFineLocationPermission(){
-        Log.d("MainActivity", "Fine Location Permission has not been granted. Requesting permission...");
-        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)){
-            Snackbar.make(mLayout, "Sunrise Alarm needs your location to calculate the sunrise", Snackbar.LENGTH_INDEFINITE)
-                    .setAction("Okay", new View.OnClickListener(){
-                        @Override
-                        public void onClick(View v){
-                            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, FINE_LOCATION);
-                        }
-                    }).show();
-        } else{
-            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, FINE_LOCATION);
-        }
-    }
-
-    public void onRequestPermissionResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults){
-        if (requestCode == FINE_LOCATION){
-            Log.d("MainActivity", "Recieved response for fine location");
-            if (grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
-                Log.d("MainActivity", "Permission granted for fine location");
-                Snackbar.make(mLayout, "Permission granted for fine location", Snackbar.LENGTH_SHORT).show();
-            } else {
-                Log.d("MainActivity", "Permission denied for fine location");
-                Snackbar.make(mLayout, "Permission denied for fine location", Snackbar.LENGTH_SHORT).show();
             }
-        } else if (requestCode == COARSE_LOCATION){
-            Log.d("MainActivity", "Received response for coarse location");
-            if (grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
-                Log.d("MainActivity", "Permission granted for coarse location");
-                Snackbar.make(mLayout, "Permission granted for coarse location", Snackbar.LENGTH_SHORT).show();
-            } else {
-                Log.d("MainActivity", "Permission denied for coarse location");
-                Snackbar.make(mLayout, "Permission denied for coarse location", Snackbar.LENGTH_SHORT).show();
+            if (key.equals("offset")){
+                SeekBarPreference sbp = (SeekBarPreference)findPreference("offset");
+                int sunriseOffset = PreferenceManager.getDefaultSharedPreferences(this.getActivity()).getInt("offset", 60) - 60;
+                String offsetSummaryMessage;
+                String minute = "minutes";
+
+                if (sunriseOffset == 1 || sunriseOffset == -1) minute = "minute";
+                if (sunriseOffset == 0){
+                    offsetSummaryMessage = "No offset";
+                } else if (sunriseOffset > 0){
+                    offsetSummaryMessage = String.valueOf(sunriseOffset) + " " + minute + " after sunrise";
+                } else {
+                    offsetSummaryMessage = String.valueOf(-sunriseOffset) + " " + minute + " before sunrise";
+                }
+                sbp.setSummary(offsetSummaryMessage);
+
             }
-        } else{
-            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+            if (key.equals("location")){
+                LocationPreference lp = (LocationPreference)findPreference("location");
+                String location = PreferenceManager.getDefaultSharedPreferences(this.getActivity()).getString("location", "38.897096, -77.036545");
+                Log.d("MainActivity", location);
+                lp.setSummary(location);
+            }
+
         }
+
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_OK) {
-            Uri uri = (Uri)data.getExtras().get(RingtoneManager.EXTRA_RINGTONE_PICKED_URI);
-            Ringtone r = RingtoneManager.getRingtone(getApplicationContext(), uri);
-            intent.putExtra("ringtone", uri.toString());
-            setRingtoneText(r.getTitle(getApplicationContext()));
-        }
-    }
+
+
 }

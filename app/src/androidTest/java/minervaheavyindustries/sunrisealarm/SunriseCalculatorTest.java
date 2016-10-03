@@ -115,5 +115,8 @@ public class SunriseCalculatorTest {
         assertEquals(12.00, sunriseTime, 0.05);
         assertEquals(15, sunrise.get(Calendar.DAY_OF_MONTH));
 
+        // Test #3 - Test Different Time Zones
+        c = setupCalendar(2016, 2, 14, 0, 0, 0, "UTC");
+
     }
 }
