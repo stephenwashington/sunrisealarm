@@ -2,133 +2,128 @@ package minervaheavyindustries.sunrisealarm;
 
 
 import android.support.test.runner.AndroidJUnit4;
-import android.text.format.Time;
 import android.util.Log;
 
 import com.minervaheavyindustries.sunrisealarm.SunriseCalculator;
 
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Locale;
-import java.util.TimeZone;
 
 import static org.junit.Assert.assertEquals;
 
 @RunWith(AndroidJUnit4.class)
 public class SunriseCalculatorTest {
 
-    public void logCalendar(Calendar c){
-        SimpleDateFormat sunriseDate = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss z", Locale.US);
-        sunriseDate.setCalendar(c);
-        sunriseDate.setTimeZone(c.getTimeZone());
-        Log.d("logCalendar", sunriseDate.format(c.getTime()));
+    public void logCalendar(DateTime dt){
+        DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss Z");
+        Log.d("logCalendar", formatter.print(dt));
     }
 
-    public Calendar setupCalendar(int year, int month, int day, int hour,
-                                int minute, int second, String timezone){
-        month--;
-        Calendar c = Calendar.getInstance();
-        c.setTimeZone(TimeZone.getTimeZone(timezone));
-        c.set(Calendar.YEAR, year);
-        c.set(Calendar.MONTH, month);
-        c.set(Calendar.DAY_OF_MONTH, day);
-        c.set(Calendar.HOUR_OF_DAY, hour);
-        c.set(Calendar.MINUTE, minute);
-        c.set(Calendar.SECOND, second);
-        c.set(Calendar.MILLISECOND, 0);
-        return c;
+    public DateTime setupDateTime(int year, int month, int day, int hour,
+                                  int minute, int second, String timezone){
+        return new DateTime(year, month, day, hour, minute, second, DateTimeZone.forID(timezone));
     }
 
-    public double getSunriseTime(Calendar c){
-        return c.get(Calendar.HOUR_OF_DAY) + c.get(Calendar.MINUTE) / 60. +
-                c.get(Calendar.SECOND) / 3600;
+    public double getSunriseTime(DateTime dt){
+        return dt.getHourOfDay() + dt.getMinuteOfHour() / 60. + dt.getSecondOfMinute() / 3600.;
     }
-
-    /*@Test
-    public void sunriseCalculator_TestJulianDayCalculator(){
-        Calendar c = setupCalendar(1957, 10, 4, 0, 0, 0, "UTC");
-        assertEquals(2436115.5, SunriseCalculator.calcJulianDay(c), 0.01);
-
-        c = setupCalendar(333, 1, 27, 0, 0, 0, "UTC");
-        assertEquals(1842712.5, SunriseCalculator.calcJulianDay(c), 0.01);
-    }
-
-    @Test
-    public void sunriseCalculator_TestGregorianDayCalculator(){
-        Calendar c;
-
-        c = SunriseCalculator.calcGregorianDate(2436116.31);
-        assertEquals(c.get(Calendar.YEAR), 1957);
-        assertEquals(c.get(Calendar.MONTH)+1, 10);
-        assertEquals(c.get(Calendar.DAY_OF_MONTH), 4);
-        assertEquals(c.get(Calendar.HOUR_OF_DAY), 19);
-        assertEquals(c.get(Calendar.MINUTE), 26);
-        assertEquals(c.get(Calendar.SECOND), 24);
-
-        c = SunriseCalculator.calcGregorianDate(1842713);
-        assertEquals(c.get(Calendar.YEAR), 333);
-        assertEquals(c.get(Calendar.MONTH)+1, 1);
-        assertEquals(c.get(Calendar.DAY_OF_MONTH), 27);
-        assertEquals(c.get(Calendar.HOUR_OF_DAY), 12);
-        assertEquals(c.get(Calendar.MINUTE), 0);
-        assertEquals(c.get(Calendar.SECOND), 0);
-    }
-
-    @Test
-    public void sunriseCalculator_TestObliquityEcliptic(){
-        Calendar c = setupCalendar(1962, 4, 8, 0, 0, 0, "EDT");
-        double jd = SunriseCalculator.calcJulianDay(c);
-        double epsilon = SunriseCalculator.calcObliquityEcliptic(jd);
-        assertEquals(23.4424, epsilon, 0.01);
-    }
-
-    @Test
-    public void sunriseCalculator_TestRightAscensionAndDeclination(){
-        Calendar c = setupCalendar(1992, 10, 13, 0, 0, 0, "UTC");
-        double jd = SunriseCalculator.calcJulianDay(c);
-        double solarCoordinates[] = SunriseCalculator.calcSolarCoordinates(jd);
-        double alpha = solarCoordinates[0];
-        double delta = solarCoordinates[1];
-        assertEquals(2448908.5, jd, 0.001);
-        assertEquals(198.38083, alpha, 0.001);
-        assertEquals(-7.78507, delta, 0.001);
-    }*/
 
     @Test
     public void sunriseCalculator_TestCalculator(){
-        Calendar c, sunrise;
+        DateTime dt, sunrise, sunriseLocal;
         double sunriseTime;
 
         // Test #1 - Make sure it works generally
-        c = setupCalendar(2016, 2, 14, 0, 0, 0, "UTC");
-        sunrise = SunriseCalculator.getSunrise(38.53, -77.03, c);
-        sunriseTime = getSunriseTime(sunrise);
-        //logCalendar(sunrise);
-        assertEquals(12.02, sunriseTime, 0.05);
-
-        // Test #2 - Make sure it handles cases where we get sunrise after it's already happened
-        c = setupCalendar(2016, 2, 14, 15, 0, 0, "UTC");
-        sunrise = SunriseCalculator.getSunrise(38.53, -77.03, c);
-        sunriseTime = getSunriseTime(sunrise);
-        //logCalendar(sunrise);
-        assertEquals(12.00, sunriseTime, 0.05);
-        assertEquals(15, sunrise.get(Calendar.DAY_OF_MONTH));
-
-        // Test #3 - Test Different Time Zones
-        c = setupCalendar(2016, 2, 14, 0, 0, 0, "America/Chicago");
-        sunrise = SunriseCalculator.getSunrise(41.51, -87.41, c);
-        Calendar sunriseLocal = Calendar.getInstance();
-        sunriseLocal.setTimeInMillis(sunrise.getTimeInMillis());
-        sunriseLocal.setTimeZone(c.getTimeZone());
-
-        //Log.d("logCalendar", sunriseLocal.toString());
+        dt = setupDateTime(2016, 2, 14, 0, 0, 0, "America/New_York");
+        sunrise = SunriseCalculator.getSunrise(38.53, -77.03, dt);
+        sunriseLocal = sunrise.withZone(dt.getZone());
         sunriseTime = getSunriseTime(sunriseLocal);
         logCalendar(sunriseLocal);
         assertEquals(7.02, sunriseTime, 0.05);
-        assertEquals(14, sunriseLocal.get(Calendar.DAY_OF_MONTH));
+
+        // Test #2 - Make sure it handles cases where we get sunrise after it's already happened
+        dt = setupDateTime(2016, 2, 14, 15, 0, 0, "America/New_York");
+        sunrise = SunriseCalculator.getSunrise(38.53, -77.03, dt);
+        sunriseLocal = sunrise.withZone(dt.getZone());
+        sunriseTime = getSunriseTime(sunriseLocal);
+        logCalendar(sunriseLocal);
+        assertEquals(7.0, sunriseTime, 0.05);
+
+        // Test #3 - Make sure it properly handles Daylight Savings
+        dt = setupDateTime(2016, 7, 4, 0, 0, 0, "America/New_York");
+        sunrise = SunriseCalculator.getSunrise(40.72, -74.02, dt);
+        sunriseLocal = sunrise.withZone(dt.getZone());
+        sunriseTime = getSunriseTime(sunriseLocal);
+        logCalendar(sunriseLocal);
+        assertEquals(5.5, sunriseTime, 0.05);
+
+        // Test #4 - Test Same Time, Different Time Zones
+        dt = setupDateTime(2016, 2, 14, 0, 0, 0, "America/Chicago");
+        sunrise = SunriseCalculator.getSunrise(41.85, -87.65, dt);
+        sunriseLocal = sunrise.withZone(dt.getZone());
+        sunriseTime = getSunriseTime(sunriseLocal);
+        logCalendar(sunriseLocal);
+        assertEquals(6.8, sunriseTime, 0.05);
+
+        dt = setupDateTime(2016, 2, 14, 0, 0, 0, "America/Denver");
+        sunrise = SunriseCalculator.getSunrise(39.43, -104.59, dt);
+        sunriseLocal = sunrise.withZone(dt.getZone());
+        sunriseTime = getSunriseTime(sunriseLocal);
+        logCalendar(sunriseLocal);
+        assertEquals(6.9, sunriseTime, 0.05);
+
+        dt = setupDateTime(2016, 2, 14, 0, 0, 0, "Asia/Tokyo");
+        sunrise = SunriseCalculator.getSunrise(35.62, 139.73, dt);
+        sunriseLocal = sunrise.withZone(dt.getZone());
+        sunriseTime = getSunriseTime(sunriseLocal);
+        logCalendar(sunriseLocal);
+        assertEquals(6.5, sunriseTime, 0.05);
+
+        dt = setupDateTime(2016, 2, 14, 0, 0, 0, "Asia/Shanghai");
+        sunrise = SunriseCalculator.getSunrise(39.92, 116.42, dt);
+        sunriseLocal = sunrise.withZone(dt.getZone());
+        sunriseTime = getSunriseTime(sunriseLocal);
+        logCalendar(sunriseLocal);
+        assertEquals(7.17, sunriseTime, 0.05);
+
+        dt = setupDateTime(2016, 2, 14, 0, 0, 0, "Asia/Kolkata");
+        sunrise = SunriseCalculator.getSunrise(28.6, 77.2, dt);
+        sunriseLocal = sunrise.withZone(dt.getZone());
+        sunriseTime = getSunriseTime(sunriseLocal);
+        logCalendar(sunriseLocal);
+        assertEquals(7.02, sunriseTime, 0.05);
+
+        dt = setupDateTime(2016, 2, 14, 0, 0, 0, "Europe/Moscow");
+        sunrise = SunriseCalculator.getSunrise(55.75, 37.58, dt);
+        sunriseLocal = sunrise.withZone(dt.getZone());
+        sunriseTime = getSunriseTime(sunriseLocal);
+        logCalendar(sunriseLocal);
+        assertEquals(7.96, sunriseTime, 0.05);
+
+        dt = setupDateTime(2016, 2, 14, 0, 0, 0, "Europe/Berlin");
+        sunrise = SunriseCalculator.getSunrise(52.33, 13.30, dt);
+        sunriseLocal = sunrise.withZone(dt.getZone());
+        sunriseTime = getSunriseTime(sunriseLocal);
+        logCalendar(sunriseLocal);
+        assertEquals(7.43, sunriseTime, 0.05);
+
+        dt = setupDateTime(2016, 2, 14, 0, 0, 0, "Europe/London");
+        sunrise = SunriseCalculator.getSunrise(51.5, 0.13, dt);
+        sunriseLocal = sunrise.withZone(dt.getZone());
+        sunriseTime = getSunriseTime(sunriseLocal);
+        logCalendar(sunriseLocal);
+        assertEquals(7.28, sunriseTime, 0.05);
+
+        dt = setupDateTime(2016, 2, 14, 0, 0, 0, "America/Sao_Paulo");
+        sunrise = SunriseCalculator.getSunrise(-22.9, -43.23, dt);
+        sunriseLocal = sunrise.withZone(dt.getZone());
+        sunriseTime = getSunriseTime(sunriseLocal);
+        logCalendar(sunriseLocal);
+        assertEquals(6.68, sunriseTime, 0.05);
 
     }
 }

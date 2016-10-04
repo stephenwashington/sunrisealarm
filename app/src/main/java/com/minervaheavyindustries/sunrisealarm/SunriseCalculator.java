@@ -1,15 +1,15 @@
 package com.minervaheavyindustries.sunrisealarm;
 
 
-import java.util.Calendar;
-import java.util.TimeZone;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
+import org.joda.time.DateTimeZone;
 
 public class SunriseCalculator {
 
     // Astronomical Algorithms, Ch 15
-    public static Calendar getSunrise(double latitude, double longitude, Calendar now){
-        now.setTimeZone(TimeZone.getTimeZone("UTC"));
-        Calendar sunrise = calcSunrise(latitude, longitude, now, false);
+    public static DateTime getSunrise(double latitude, double longitude, DateTime now){
+        DateTime sunrise = calcSunrise(latitude, longitude, now, false);
         return (now.compareTo(sunrise) > 0) ? calcSunrise(latitude, longitude, now, true) : sunrise;
      }
 
@@ -38,24 +38,7 @@ public class SunriseCalculator {
     }
 
     // Astronomical Algorithms, Chapter 7
-    private static double calcJulianDay(Calendar c){
-        int y = c.get(Calendar.YEAR);
-        int m = c.get(Calendar.MONTH);
-        int d = c.get(Calendar.DAY_OF_MONTH);
-
-        m++; // Calendar stores MONTH as 0-indexed
-        if (m <= 2){
-            y--;
-            m += 12;
-        }
-
-        int a = (int)(y / 100.);
-        int b = (y >= 1582 && m >= 10 && d >= 4) ? 2 - a + (int)(a / 4.) : 0;
-        return (int)(365.25*(y + 4716)) + (int)(30.6001*(m+1)) + d + b - 1524.5;
-    }
-
-    // Astronomical Algorithms, Chapter 7
-    private static Calendar calcGregorianDate(double julianDate){
+    private static DateTime calcGregorianDate(double julianDate){
         int A, B, C, D, E, Z;
         double F;
         julianDate += 0.5;
@@ -82,16 +65,8 @@ public class SunriseCalculator {
         int minute = (int)(hours * 60) % 60;
         int second = (int)(hours * 60 * 60) % 60;
 
-        Calendar gregorianUTC = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-        gregorianUTC.set(Calendar.YEAR, year);
-        gregorianUTC.set(Calendar.MONTH, month-1);
-        gregorianUTC.set(Calendar.DAY_OF_MONTH, day);
-        gregorianUTC.set(Calendar.HOUR_OF_DAY, hour);
-        gregorianUTC.set(Calendar.MINUTE, minute);
-        gregorianUTC.set(Calendar.SECOND, second);
-        gregorianUTC.set(Calendar.MILLISECOND, 0);
+        return new DateTime(year, month, day, hour, minute, second, DateTimeZone.UTC);
 
-        return gregorianUTC;
     }
 
     private static double getJulianCentury(double jd){
@@ -100,8 +75,8 @@ public class SunriseCalculator {
 
     // http://eclipse.gsfc.nasa.gov/SEhelp/deltatpoly2004.html
     // Note that this is only accurate for the years 2005-2050
-    private static double calcDeltaT(Calendar c){
-        double y = (c.get(Calendar.YEAR) + (c.get(Calendar.MONTH) - 0.5)/12);
+    private static double calcDeltaT(DateTime dt){
+        double y = (dt.getYear() + (dt.getMonthOfYear() - 0.5)) / 12;
         double t = y - 2000;
         return 62.92 + 0.32217*t + 0.005589*t*t;
      }
@@ -164,11 +139,11 @@ public class SunriseCalculator {
 
     // Astronomical Algorithms, Chapter 15
     // 'tomorrow' param if we need to calculate today's sunrise, or tomorrow's
-    private static Calendar calcSunrise(double latitude, double longitude, Calendar now, boolean tomorrow){
+    private static DateTime calcSunrise(double latitude, double longitude, DateTime now, boolean tomorrow){
 
         longitude *= -1; //positive west of greenwich
 
-        double jd = calcJulianDay(now);
+        double jd = DateTimeUtils.toJulianDayNumber(now.getMillis()) - 0.5;
         if (tomorrow) { jd++;}
         double gast = calcGreenwichApparentSiderealTime(jd);
         double solarCoordinates1[] = calcSolarCoordinates(jd-1);

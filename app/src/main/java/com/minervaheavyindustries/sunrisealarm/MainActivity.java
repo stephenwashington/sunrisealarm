@@ -16,11 +16,10 @@ import android.preference.SwitchPreference;
 import android.util.Log;
 import android.widget.Toast;
 
-import java.util.Calendar;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
-/*TODO:
-- Fix bug where getting location for non-UTC timezones skips ahead two weeks
-*/
 public class MainActivity extends PreferenceActivity {
 
     private static Intent intent;
@@ -44,7 +43,7 @@ public class MainActivity extends PreferenceActivity {
             super.onCreate(savedInstanceState);
             PreferenceManager.setDefaultValues(getActivity(), R.xml.preferences, false);
             addPreferencesFromResource(R.xml.preferences);
-            updateAllSummaries(false);
+            updateAllSummaries();
         }
 
         @Override
@@ -52,7 +51,7 @@ public class MainActivity extends PreferenceActivity {
             super.onResume();
             Log.d("MainActivity", "onResume");
             getPreferenceManager().getSharedPreferences().registerOnSharedPreferenceChangeListener(this);
-            updateAllSummaries(false);
+            updateAllSummaries();
         }
 
         @Override
@@ -61,25 +60,25 @@ public class MainActivity extends PreferenceActivity {
             super.onPause();
         }
 
-        public void updateAllSummaries(boolean makeToast){
-            updateSummary("ringtone", makeToast);
-            updateSummary("offset", makeToast);
-            updateSummary("location", makeToast);
+        public void updateAllSummaries(){
+            updateSummary("ringtone");
+            updateSummary("offset");
+            updateSummary("location");
         }
 
 
 
         public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key){
-            Log.d("MainActivity", "SharedPreferenceChanged!");
+            Log.d("MainActivity", "SharedPreferenceChanged - " + key);
             switch(key){
                 case "ringtone":
-                    updateSummary("ringtone", true);
+                    updateSummary("ringtone");
                 case "offset":
-                    updateSummary("offset", true);
+                    updateSummary("offset");
                 case "location":
-                    updateSummary("location", true);
+                    updateSummary("location");
                 case "alarm":
-                    updateSummary("alarm", true);
+                    updateSummary("alarm");
                 default:
                     break;
             }
@@ -89,93 +88,94 @@ public class MainActivity extends PreferenceActivity {
             Toast.makeText(getActivity(), message, Toast.LENGTH_SHORT).show();
         }
 
-        public void updateSummary(String key, boolean makeToast){
+        public void updateSummary(String key){
             SharedPreferences sp = getPreferenceManager().getSharedPreferences();
-            Log.d("updateSummary", key + " " + String.valueOf(makeToast));
 
-            if (key.equals("alarm")){
-                SwitchPreference switchPreference = (SwitchPreference)findPreference("alarm");
-                boolean alarmStatus = sp.getBoolean("alarm", false);
-                if (alarmStatus){
-                    // set the alarm sound
+            switch(key){
+                case "alarm":
+                    boolean alarmStatus = sp.getBoolean("alarm", false);
+                    if (alarmStatus){
+                        updateAlarm();
+                        showToast("Alarm Set");
+                    } else {
+                        if (pendingIntent != null){ alarmManager.cancel(pendingIntent); }
+                        showToast("Alarm Unset");
+                    }
+
+                case "ringtone":
                     String ringtonePref = sp.getString("ringtone", "");
-                    Uri ringtoneUri = Uri.parse(ringtonePref);
-                    intent.putExtra("ringtone", ringtoneUri.toString());
+                    RingtonePreference rp = (RingtonePreference)findPreference("ringtone");
 
-                    //Get the alarm time
-                    Calendar now = Calendar.getInstance();
-                    String location = PreferenceManager.getDefaultSharedPreferences(this.getActivity()).getString("location", "38.897096, -77.036545");
-                    String[] latlong = location.split(",");
-                    double latitude = Double.valueOf(latlong[0].replaceAll("\\s+",""));
-                    double longitude = Double.valueOf(latlong[1].replaceAll("\\s+",""));
-                    Calendar sunriseUTC = SunriseCalculator.getSunrise(latitude, longitude, now);
+                    if (!ringtonePref.equals("")){
+                        Uri ringtoneUri = Uri.parse(ringtonePref);
+                        Ringtone ringtone = RingtoneManager.getRingtone(getActivity(), ringtoneUri);
+                        String ringtoneName = ringtone.getTitle(getActivity());
+                        rp.setSummary(ringtoneName);
+                    } else {
+                        rp.setSummary("Silent");
+                    }
+                    updateAlarm();
 
-                    // Localize, set offset
-                    Calendar sunriseLocal = Calendar.getInstance();
-                    sunriseLocal.setTimeInMillis(sunriseUTC.getTimeInMillis());
+                case "offset":
+                    SeekBarPreference sbp = (SeekBarPreference)findPreference("offset");
                     int sunriseOffset = PreferenceManager.getDefaultSharedPreferences(this.getActivity()).getInt("offset", 60) - 60;
-                    sunriseLocal.add(Calendar.MINUTE, sunriseOffset);
+                    String offsetSummaryMessage;
+                    String minute = "minutes";
 
-                    // Set the alarm itself
-                    pendingIntent = PendingIntent.getBroadcast(getActivity(), 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-                    alarmManager.set(AlarmManager.RTC_WAKEUP, sunriseLocal.getTimeInMillis(), pendingIntent);
+                    if (sunriseOffset == 1 || sunriseOffset == -1) minute = "minute";
+                    if (sunriseOffset == 0){
+                        offsetSummaryMessage = "No offset";
+                    } else if (sunriseOffset > 0){
+                        offsetSummaryMessage = String.valueOf(sunriseOffset) + " " + minute + " after sunrise";
+                    } else {
+                        offsetSummaryMessage = String.valueOf(-sunriseOffset) + " " + minute + " before sunrise";
+                    }
+                    sbp.setSummary(offsetSummaryMessage);
+                    updateAlarm();
 
-                    // Update Preference Summary
-                    switchPreference.setSummary(sunriseLocal.getTime().toString());
-
-                    //Notify User
-                    if (makeToast){ showToast("Alarm Set"); }
-                } else {
-                    alarmManager.cancel(pendingIntent);
-                    if (makeToast){ showToast("Alarm Unset"); }
-                }
-
+                case "location":
+                    LocationPreference lp = (LocationPreference)findPreference("location");
+                    String location = PreferenceManager.getDefaultSharedPreferences(this.getActivity()).getString("location", "38.897096, -77.036545");
+                    Log.d("MainActivity", location);
+                    lp.setSummary(location);
+                    updateAlarm();
+                default:
+                    break;
             }
-            if (key.equals("ringtone")){
-                String ringtonePref = sp.getString("ringtone", "");
-                RingtonePreference rp = (RingtonePreference)findPreference("ringtone");
+        }
 
-                if (ringtonePref.equals("")){
-                    Uri ringtoneUri = Uri.parse(ringtonePref);
-                    Ringtone ringtone = RingtoneManager.getRingtone(getActivity(), ringtoneUri);
-                    String ringtoneName = ringtone.getTitle(getActivity());
-                    rp.setSummary(ringtoneName);
-                    if (makeToast){ showToast("Ringtone set to " + ringtoneName); }
-                } else {
-                    rp.setSummary("Silent");
-                    if (makeToast){ showToast("Ringtone set to Silent"); }
-                }
+        private void updateAlarm(){
+            SharedPreferences sp = getPreferenceManager().getSharedPreferences();
+            SwitchPreference switchPreference = (SwitchPreference)findPreference("alarm");
 
-
-
+            if (pendingIntent != null){
+                alarmManager.cancel(pendingIntent);
             }
-            if (key.equals("offset")){
-                SeekBarPreference sbp = (SeekBarPreference)findPreference("offset");
-                int sunriseOffset = PreferenceManager.getDefaultSharedPreferences(this.getActivity()).getInt("offset", 60) - 60;
-                String offsetSummaryMessage;
-                String minute = "minutes";
+            // set the alarm sound
+            String ringtonePref = sp.getString("ringtone", "");
+            Uri ringtoneUri = Uri.parse(ringtonePref);
+            intent.putExtra("ringtone", ringtoneUri.toString());
 
-                if (sunriseOffset == 1 || sunriseOffset == -1) minute = "minute";
-                if (sunriseOffset == 0){
-                    offsetSummaryMessage = "No offset";
-                } else if (sunriseOffset > 0){
-                    offsetSummaryMessage = String.valueOf(sunriseOffset) + " " + minute + " after sunrise";
-                } else {
-                    offsetSummaryMessage = String.valueOf(-sunriseOffset) + " " + minute + " before sunrise";
-                }
-                sbp.setSummary(offsetSummaryMessage);
-                if (makeToast) { showToast("Offset set to " + offsetSummaryMessage);}
+            //Get the alarm time
+            DateTime now = DateTime.now();
+            String location = PreferenceManager.getDefaultSharedPreferences(this.getActivity()).getString("location", "38.897096, -77.036545");
+            String[] latlong = location.split(",");
+            double latitude = Double.valueOf(latlong[0].replaceAll("\\s+",""));
+            double longitude = Double.valueOf(latlong[1].replaceAll("\\s+",""));
+            DateTime sunriseUTC = SunriseCalculator.getSunrise(latitude, longitude, now);
 
-            }
+            // Localize, set offset
+            DateTime sunriseLocal = sunriseUTC.withZone(now.getZone());
+            int sunriseOffset = PreferenceManager.getDefaultSharedPreferences(this.getActivity()).getInt("offset", 60) - 60;
+            sunriseLocal = sunriseLocal.plusMinutes(sunriseOffset);
 
-            if (key.equals("location")){
-                LocationPreference lp = (LocationPreference)findPreference("location");
-                String location = PreferenceManager.getDefaultSharedPreferences(this.getActivity()).getString("location", "38.897096, -77.036545");
-                Log.d("MainActivity", location);
-                lp.setSummary(location);
-                if (makeToast) { showToast("Location set to " + location); }
-            }
+            // Set the alarm itself
+            pendingIntent = PendingIntent.getBroadcast(getActivity(), 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+            alarmManager.set(AlarmManager.RTC_WAKEUP, sunriseLocal.getMillis(), pendingIntent);
 
+            // Update Preference Summary
+            DateTimeFormatter formatter = DateTimeFormat.forPattern("E, yyyy-MM-dd HH:mm:ss Z");
+            switchPreference.setSummary(sunriseLocal.toString(formatter));
         }
 
     }

@@ -3,7 +3,6 @@ package com.minervaheavyindustries.sunrisealarm;
 
 import android.Manifest;
 import android.annotation.TargetApi;
-import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -11,7 +10,6 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.PermissionChecker;
 import android.util.Log;
 
 import java.util.HashMap;
@@ -122,11 +120,9 @@ public class LocationUtilities{
 
     private static HashMap isLocationEnabled(LocationManager lm){
         HashMap locStatus = new HashMap();
-        boolean gpsEnabled = false;
-        boolean networkEnabled = false;
 
-        gpsEnabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
-        networkEnabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        boolean gpsEnabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        boolean networkEnabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
 
         locStatus.put("gps", gpsEnabled);
         locStatus.put("network", networkEnabled);
