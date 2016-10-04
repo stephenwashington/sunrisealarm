@@ -8,6 +8,7 @@ public class SunriseCalculator {
 
     // Astronomical Algorithms, Ch 15
     public static Calendar getSunrise(double latitude, double longitude, Calendar now){
+        now.setTimeZone(TimeZone.getTimeZone("UTC"));
         Calendar sunrise = calcSunrise(latitude, longitude, now, false);
         return (now.compareTo(sunrise) > 0) ? calcSunrise(latitude, longitude, now, true) : sunrise;
      }

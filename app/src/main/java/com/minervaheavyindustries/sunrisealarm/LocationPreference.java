@@ -10,13 +10,14 @@ import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.preference.EditTextPreference;
-import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.View;
+import android.widget.EditText;
+import android.widget.Toast;
 
 import java.util.Locale;
 
@@ -24,7 +25,6 @@ public class LocationPreference extends EditTextPreference {
 
     private Context mContext;
     private Activity mActivity;
-    private View mLayout;
     private String value;
     private static final int COARSE_LOCATION = 0;
     private static final int FINE_LOCATION = 1;
@@ -39,6 +39,30 @@ public class LocationPreference extends EditTextPreference {
     protected void onPrepareDialogBuilder(AlertDialog.Builder builder){
         super.onPrepareDialogBuilder(builder);
         builder.setNeutralButton("Get Location", this);
+        final EditText editText = getEditText();
+        editText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                String currentInput = editText.getText().toString();
+                if (validInput(currentInput)){
+                    value = currentInput;
+                }
+            }
+        });
+    }
+
+    private boolean validInput(String s){
+        return s.matches("(-)?\\d+[.]\\d+, (-)?\\d+[.]\\d+");
     }
 
     @Override
@@ -58,31 +82,21 @@ public class LocationPreference extends EditTextPreference {
                         double longitude = loc.getLongitude();
                         value = String.format(Locale.US, "%.5f, %.5f", latitude, longitude);
                         this.setText(value);
-                        Log.d("LocationPreference", value);
-                    } else {
-                        Log.d("LocationPreference", "Location is null!");
                     }
                 }
+                break;
             case DialogInterface.BUTTON_POSITIVE:
-                (getDialog()).dismiss();
-                Log.d("LocationPreference+", this.getText());
+                this.setText(value);
+                break;
             default:
-                (getDialog()).dismiss();
                 break;
         }
-
     }
 
     private void requestCoarseLocationPermission(){
         Log.d("LocationPreference","Coarse Location Permission has not been granted. Requesting permission...");
         if (ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.ACCESS_COARSE_LOCATION)){
-            Snackbar.make(mLayout, "Sunrise Alarm needs your location to calculate the sunrise", Snackbar.LENGTH_INDEFINITE)
-                    .setAction("Okay", new View.OnClickListener(){
-                        @Override
-                        public void onClick(View v){
-                            ActivityCompat.requestPermissions(mActivity, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, COARSE_LOCATION);
-                        }
-                    }).show();
+            Toast.makeText(getContext(), "Alarm needs your location to calculate the sunrise", Toast.LENGTH_SHORT).show();
         } else{
             ActivityCompat.requestPermissions(mActivity, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, COARSE_LOCATION);
         }
@@ -91,13 +105,7 @@ public class LocationPreference extends EditTextPreference {
     private void requestFineLocationPermission(){
         Log.d("LocationPreference", "Fine Location Permission has not been granted. Requesting permission...");
         if (ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.ACCESS_FINE_LOCATION)){
-            Snackbar.make(mLayout, "Sunrise Alarm needs your location to calculate the sunrise", Snackbar.LENGTH_INDEFINITE)
-                    .setAction("Okay", new View.OnClickListener(){
-                        @Override
-                        public void onClick(View v){
-                            ActivityCompat.requestPermissions(mActivity, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, FINE_LOCATION);
-                        }
-                    }).show();
+            Toast.makeText(getContext(), "Alarm needs your location to calculate the sunrise", Toast.LENGTH_SHORT).show();
         } else{
             ActivityCompat.requestPermissions(mActivity, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, FINE_LOCATION);
         }
@@ -108,20 +116,16 @@ public class LocationPreference extends EditTextPreference {
         if (requestCode == FINE_LOCATION){
             Log.d("LocationPreference", "Recieved response for fine location");
             if (grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
-                Log.d("LocationPreference", "Permission granted for fine location");
-                Snackbar.make(mLayout, "Permission granted for fine location", Snackbar.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Permission granted for location", Toast.LENGTH_SHORT).show();
             } else {
-                Log.d("LocationPreference", "Permission denied for fine location");
-                Snackbar.make(mLayout, "Permission denied for fine location", Snackbar.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Permission denied for location", Toast.LENGTH_SHORT).show();
             }
         } else if (requestCode == COARSE_LOCATION){
             Log.d("LocationPreference", "Received response for coarse location");
             if (grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
-                Log.d("LocationPreference", "Permission granted for coarse location");
-                Snackbar.make(mLayout, "Permission granted for coarse location", Snackbar.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Permission granted for location", Toast.LENGTH_SHORT).show();
             } else {
-                Log.d("LocationPreference", "Permission denied for coarse location");
-                Snackbar.make(mLayout, "Permission denied for coarse location", Snackbar.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Permission denied for location", Toast.LENGTH_SHORT).show();
             }
         }
     }

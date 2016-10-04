@@ -15,7 +15,6 @@
             android:defaultValue="38.897096, -77.036545"
             android:summary="Tap to set the app's location" />
 
-
         <RingtonePreference
             android:key="ringtone"
             android:showDefault="true"

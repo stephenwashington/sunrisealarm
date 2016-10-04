@@ -14,14 +14,12 @@ import android.preference.PreferenceManager;
 import android.preference.RingtonePreference;
 import android.preference.SwitchPreference;
 import android.util.Log;
+import android.widget.Toast;
 
 import java.util.Calendar;
 
 /*TODO:
-- Add parser for manual location input, show toast if error isn't right format (lat.DD, long.DD)
-- Fix bug where editing text, then hitting okay doesn't actually save the edits
 - Fix bug where getting location for non-UTC timezones skips ahead two weeks
-- Add toasts for all preferences to increase user's awareness of what's happening
 */
 public class MainActivity extends PreferenceActivity {
 
@@ -46,15 +44,15 @@ public class MainActivity extends PreferenceActivity {
             super.onCreate(savedInstanceState);
             PreferenceManager.setDefaultValues(getActivity(), R.xml.preferences, false);
             addPreferencesFromResource(R.xml.preferences);
-            updateAllSummaries();
+            updateAllSummaries(false);
         }
 
         @Override
         public void onResume() {
             super.onResume();
             Log.d("MainActivity", "onResume");
-            updateAllSummaries();
             getPreferenceManager().getSharedPreferences().registerOnSharedPreferenceChangeListener(this);
+            updateAllSummaries(false);
         }
 
         @Override
@@ -63,29 +61,37 @@ public class MainActivity extends PreferenceActivity {
             super.onPause();
         }
 
-        public void updateAllSummaries(){
-            updateSummary("ringtone");
-            updateSummary("offset");
-            updateSummary("location");
+        public void updateAllSummaries(boolean makeToast){
+            updateSummary("ringtone", makeToast);
+            updateSummary("offset", makeToast);
+            updateSummary("location", makeToast);
         }
+
 
 
         public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key){
             Log.d("MainActivity", "SharedPreferenceChanged!");
-            if (key.equals("ringtone")){
-                updateSummary("ringtone");
-            } else if (key.equals("offset")){
-                updateSummary("offset");
-            } else if (key.equals("location")){
-                updateSummary("location");
-            } else if (key.equals("alarm")){
-                updateSummary("alarm");
+            switch(key){
+                case "ringtone":
+                    updateSummary("ringtone", true);
+                case "offset":
+                    updateSummary("offset", true);
+                case "location":
+                    updateSummary("location", true);
+                case "alarm":
+                    updateSummary("alarm", true);
+                default:
+                    break;
             }
         }
 
-        public void updateSummary(String key){
+        public void showToast(String message){
+            Toast.makeText(getActivity(), message, Toast.LENGTH_SHORT).show();
+        }
+
+        public void updateSummary(String key, boolean makeToast){
             SharedPreferences sp = getPreferenceManager().getSharedPreferences();
-            Log.d("MainActivity", key);
+            Log.d("updateSummary", key + " " + String.valueOf(makeToast));
 
             if (key.equals("alarm")){
                 SwitchPreference switchPreference = (SwitchPreference)findPreference("alarm");
@@ -96,9 +102,8 @@ public class MainActivity extends PreferenceActivity {
                     Uri ringtoneUri = Uri.parse(ringtonePref);
                     intent.putExtra("ringtone", ringtoneUri.toString());
 
-                    //Set the alarm time
+                    //Get the alarm time
                     Calendar now = Calendar.getInstance();
-                    LocationPreference lp = (LocationPreference)findPreference("location");
                     String location = PreferenceManager.getDefaultSharedPreferences(this.getActivity()).getString("location", "38.897096, -77.036545");
                     String[] latlong = location.split(",");
                     double latitude = Double.valueOf(latlong[0].replaceAll("\\s+",""));
@@ -117,8 +122,12 @@ public class MainActivity extends PreferenceActivity {
 
                     // Update Preference Summary
                     switchPreference.setSummary(sunriseLocal.getTime().toString());
+
+                    //Notify User
+                    if (makeToast){ showToast("Alarm Set"); }
                 } else {
                     alarmManager.cancel(pendingIntent);
+                    if (makeToast){ showToast("Alarm Unset"); }
                 }
 
             }
@@ -126,14 +135,18 @@ public class MainActivity extends PreferenceActivity {
                 String ringtonePref = sp.getString("ringtone", "");
                 RingtonePreference rp = (RingtonePreference)findPreference("ringtone");
 
-                if (ringtonePref != ""){
+                if (ringtonePref.equals("")){
                     Uri ringtoneUri = Uri.parse(ringtonePref);
                     Ringtone ringtone = RingtoneManager.getRingtone(getActivity(), ringtoneUri);
                     String ringtoneName = ringtone.getTitle(getActivity());
                     rp.setSummary(ringtoneName);
+                    if (makeToast){ showToast("Ringtone set to " + ringtoneName); }
                 } else {
                     rp.setSummary("Silent");
+                    if (makeToast){ showToast("Ringtone set to Silent"); }
                 }
+
+
 
             }
             if (key.equals("offset")){
@@ -151,6 +164,7 @@ public class MainActivity extends PreferenceActivity {
                     offsetSummaryMessage = String.valueOf(-sunriseOffset) + " " + minute + " before sunrise";
                 }
                 sbp.setSummary(offsetSummaryMessage);
+                if (makeToast) { showToast("Offset set to " + offsetSummaryMessage);}
 
             }
 
@@ -159,12 +173,11 @@ public class MainActivity extends PreferenceActivity {
                 String location = PreferenceManager.getDefaultSharedPreferences(this.getActivity()).getString("location", "38.897096, -77.036545");
                 Log.d("MainActivity", location);
                 lp.setSummary(location);
+                if (makeToast) { showToast("Location set to " + location); }
             }
 
         }
 
     }
-
-
 
 }

@@ -2,6 +2,7 @@ package minervaheavyindustries.sunrisealarm;
 
 
 import android.support.test.runner.AndroidJUnit4;
+import android.text.format.Time;
 import android.util.Log;
 
 import com.minervaheavyindustries.sunrisealarm.SunriseCalculator;
@@ -22,6 +23,7 @@ public class SunriseCalculatorTest {
     public void logCalendar(Calendar c){
         SimpleDateFormat sunriseDate = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss z", Locale.US);
         sunriseDate.setCalendar(c);
+        sunriseDate.setTimeZone(c.getTimeZone());
         Log.d("logCalendar", sunriseDate.format(c.getTime()));
     }
 
@@ -104,19 +106,29 @@ public class SunriseCalculatorTest {
         c = setupCalendar(2016, 2, 14, 0, 0, 0, "UTC");
         sunrise = SunriseCalculator.getSunrise(38.53, -77.03, c);
         sunriseTime = getSunriseTime(sunrise);
-        logCalendar(sunrise);
+        //logCalendar(sunrise);
         assertEquals(12.02, sunriseTime, 0.05);
 
         // Test #2 - Make sure it handles cases where we get sunrise after it's already happened
         c = setupCalendar(2016, 2, 14, 15, 0, 0, "UTC");
         sunrise = SunriseCalculator.getSunrise(38.53, -77.03, c);
         sunriseTime = getSunriseTime(sunrise);
-        logCalendar(sunrise);
+        //logCalendar(sunrise);
         assertEquals(12.00, sunriseTime, 0.05);
         assertEquals(15, sunrise.get(Calendar.DAY_OF_MONTH));
 
         // Test #3 - Test Different Time Zones
-        c = setupCalendar(2016, 2, 14, 0, 0, 0, "UTC");
+        c = setupCalendar(2016, 2, 14, 0, 0, 0, "America/Chicago");
+        sunrise = SunriseCalculator.getSunrise(41.51, -87.41, c);
+        Calendar sunriseLocal = Calendar.getInstance();
+        sunriseLocal.setTimeInMillis(sunrise.getTimeInMillis());
+        sunriseLocal.setTimeZone(c.getTimeZone());
+
+        //Log.d("logCalendar", sunriseLocal.toString());
+        sunriseTime = getSunriseTime(sunriseLocal);
+        logCalendar(sunriseLocal);
+        assertEquals(7.02, sunriseTime, 0.05);
+        assertEquals(14, sunriseLocal.get(Calendar.DAY_OF_MONTH));
 
     }
 }

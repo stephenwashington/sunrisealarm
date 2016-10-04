@@ -55,8 +55,6 @@ public class LocationUtilities{
             }
         };
 
-        //Log.d("LocationUtilities", "GPS: " + gpsEnabled + " Network: " + networkEnabled);
-
         if ((ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED)
                 && (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)){
             try {
@@ -77,46 +75,10 @@ public class LocationUtilities{
             }
         }
 
-
-/*{
-            if (lm != null ) {
-                if (gpsEnabled) {
-                    lastKnownLocation = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                    if (lastKnownLocation != null){
-                        return lastKnownLocation;
-                    } else {
-                        Log.d("LocationUtilities", "GPS Location came back null!");
-                        return null;
-                    }
-
-                }
-
-                if (networkEnabled) {
-                    lastKnownLocation = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-                    if (lastKnownLocation != null){
-                        return lastKnownLocation;
-                    } else {
-                        Log.d("LocationUtilities", "Network Location came back null!");
-                        return null;
-                    }
-                }
-                lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
-                lm.removeUpdates(locationListener);
-            } else {
-                Log.d("LocationUtilities", "LocationManager is null!");
-                return null;
-            }
-
-        } else {
-            Log.d("LocationUtilities", "Permissions have not been granted!");
-            return null;
-        }
-        Log.d("LocationUtilities", "Made it to the bottom of getLocation?!");
-        return null;*/
         return betterLocation;
     }
 
-    protected static boolean isBetterLocation(Location location, Location currentBestLocation) {
+    private static boolean isBetterLocation(Location location, Location currentBestLocation) {
         if (currentBestLocation == null) {
             return true;
         }
@@ -158,7 +120,7 @@ public class LocationUtilities{
         return provider1.equals(provider2);
     }
 
-    public static HashMap isLocationEnabled(LocationManager lm){
+    private static HashMap isLocationEnabled(LocationManager lm){
         HashMap locStatus = new HashMap();
         boolean gpsEnabled = false;
         boolean networkEnabled = false;
