@@ -13,7 +13,6 @@ import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.preference.RingtonePreference;
 import android.preference.SwitchPreference;
-import android.util.Log;
 
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -35,7 +34,6 @@ public class MainActivity extends PreferenceActivity {
 
         @Override
         public void onCreate(Bundle savedInstanceState){
-            Log.d("MainActivity", "onCreate");
             super.onCreate(savedInstanceState);
             PreferenceManager.setDefaultValues(getActivity(), R.xml.preferences, false);
             addPreferencesFromResource(R.xml.preferences);
@@ -44,7 +42,6 @@ public class MainActivity extends PreferenceActivity {
         @Override
         public void onResume() {
             super.onResume();
-            Log.d("MainActivity", "onResume");
             getPreferenceManager().getSharedPreferences().registerOnSharedPreferenceChangeListener(this);
             updateSummary("ringtone");
         }
@@ -56,7 +53,6 @@ public class MainActivity extends PreferenceActivity {
         }
 
         public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key){
-            Log.d("MainActivity", "SharedPreferenceChanged - " + key);
             switch(key){
                 case "ringtone":
                     updateSummary("ringtone");
@@ -107,9 +103,9 @@ public class MainActivity extends PreferenceActivity {
                     if (sunriseOffset == 0){
                         offsetSummaryMessage = "No offset";
                     } else if (sunriseOffset > 0){
-                        offsetSummaryMessage = String.valueOf(sunriseOffset) + " " + minute + " after sunrise";
+                        offsetSummaryMessage = String.valueOf(sunriseOffset) + " " + minute + " " + R.string.after_sunrise;
                     } else {
-                        offsetSummaryMessage = String.valueOf(-sunriseOffset) + " " + minute + " before sunrise";
+                        offsetSummaryMessage = String.valueOf(-sunriseOffset) + " " + minute + " " + R.string.before_sunrise;
                     }
                     sbp.setSummary(offsetSummaryMessage);
                     if (alarmStatus) { updateAlarm(); }
@@ -129,7 +125,6 @@ public class MainActivity extends PreferenceActivity {
             PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), ALARM_ID, intent, 0);
             alarmManager.cancel(pendingIntent);
             pendingIntent.cancel();
-            Log.d("MainActivity", "Alarm has been cancelled");
         }
 
         private void updateAlarm(){
@@ -163,7 +158,6 @@ public class MainActivity extends PreferenceActivity {
             // Update Preference Summary
             DateTimeFormatter formatter = DateTimeFormat.forPattern("E, yyyy-MM-dd HH:mm:ss Z");
             switchPreference.setSummary(sunriseLocal.toString(formatter));
-            Log.d("MainActivity", "Alarm has been set");
         }
 
     }

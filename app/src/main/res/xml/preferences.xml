@@ -1,34 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-    <PreferenceCategory android:title="Sunrise Alarm Settings">
+    <PreferenceCategory android:title="@string/preferences_title">
         <SwitchPreference
             android:defaultValue="false"
-            android:title="Turn Alarm On"
+            android:title="@string/alarm_pref_title"
             android:key="alarm"
-            android:summaryOff="No Alarm Set"
+            android:summaryOff="@string/alarm_pref_summary_off"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
         <com.minervaheavyindustries.sunrisealarm.LocationPreference
             android:key="location"
-            android:title="Location"
+            android:title="@string/location_pref_title"
             android:defaultValue="38.897096, -77.036545"
-            android:summary="Tap to set the app's location" />
+            android:summary="@string/location_pref_summary"/>
 
         <RingtonePreference
             android:key="ringtone"
             android:showDefault="true"
             android:showSilent="true"
-            android:summary="Pick a ringtone"
-            android:title="Ringtone"
+            android:summary="@string/ringtone_pref_summary"
+            android:title="@string/ringtone_pref_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
         <com.minervaheavyindustries.sunrisealarm.SeekBarPreference
             android:key="offset"
-            android:title="Offset"
+            android:title="@string/offset_pref_title"
             android:defaultValue="60"
-            android:summary="Tap to set the alarm offset"/>
+            android:summary="@string/offset_pref_summary"/>
     </PreferenceCategory>
 
 

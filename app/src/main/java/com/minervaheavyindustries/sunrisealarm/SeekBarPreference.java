@@ -13,7 +13,8 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 // http://stackoverflow.com/questions/1974193/slider-on-my-preferencescreen
-public class SeekBarPreference extends DialogPreference implements SeekBar.OnSeekBarChangeListener, View.OnClickListener {
+public class SeekBarPreference extends DialogPreference
+        implements SeekBar.OnSeekBarChangeListener, View.OnClickListener {
 
     private SeekBar seekBar;
     private TextView valueText;
@@ -38,12 +39,15 @@ public class SeekBarPreference extends DialogPreference implements SeekBar.OnSee
         valueText = new TextView(mContext);
         valueText.setGravity(Gravity.CENTER_HORIZONTAL);
         valueText.setTextSize(24);
-        params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
         layout.addView(valueText, params);
 
         seekBar = new SeekBar(mContext);
         seekBar.setOnSeekBarChangeListener(this);
-        layout.addView(seekBar, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        layout.addView(seekBar,
+                new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT));
 
         if (shouldPersist()) {
             value = getPersistedInt(defaultVal);
@@ -75,7 +79,9 @@ public class SeekBarPreference extends DialogPreference implements SeekBar.OnSee
     @Override
     public void onProgressChanged(SeekBar seek, int value, boolean fromTouch) {
         String t = String.valueOf(value - 60);
-        valueText.setText(t.concat(" " + ((value == 59 || value == 61) ? "minute" : "minutes")));
+        valueText.setText(t.concat(" " + ((value == 59 || value == 61) ?
+                mContext.getString(R.string.minute_singular) :
+                mContext.getString(R.string.minute_plural))));
     }
 
     @Override

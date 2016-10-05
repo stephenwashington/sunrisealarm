@@ -1,3 +1,21 @@
 <resources>
     <string name="app_name">Sunrise Alarm</string>
+    <string name="stop_alarm">Stop Alarm</string>
+    <string name="after_sunrise">after sunrise</string>
+    <string name="before_sunrise">before sunrise</string>
+    <string name="minute_singular">minute</string>
+    <string name="minute_plural">minutes</string>
+    <string name="something_went_wrong">Something went wrong. Please try again.</string>
+    <string name="location_neutral">Get Location</string>
+    <string name="location_granted">Permission granted for location</string>
+    <string name="location_denied">Permission denied for location</string>
+    <string name="alarm_pref_title">Alarm</string>
+    <string name="location_pref_title">Location</string>
+    <string name="ringtone_pref_title">Ringtone</string>
+    <string name="offset_pref_title">Offset</string>
+    <string name="alarm_pref_summary_off">No Alarm Set</string>
+    <string name="location_pref_summary">No Location Set</string>
+    <string name="ringtone_pref_summary">No Ringtone Set</string>
+    <string name="offset_pref_summary">No Offset</string>
+    <string name="preferences_title">Sunrise Alarm Settings</string>
 </resources>

@@ -39,7 +39,7 @@ public class LocationPreference extends EditTextPreference {
     @Override
     protected void onPrepareDialogBuilder(AlertDialog.Builder builder){
         super.onPrepareDialogBuilder(builder);
-        builder.setNeutralButton("Get Location", this);
+        builder.setNeutralButton(R.string.location_neutral, this);
         final EditText editText = getEditText();
         SharedPreferences sp = getPreferenceManager().getSharedPreferences();
 
@@ -92,14 +92,11 @@ public class LocationPreference extends EditTextPreference {
                         double latitude = loc.getLatitude();
                         double longitude = loc.getLongitude();
                         value = String.format(Locale.US, "%.5f, %.5f", latitude, longitude);
-                        Log.d("LocationPreference", value);
                         this.setText(value);
                     } else {
                         Log.d("LocationPreference", "Location came back null!");
-                        Toast.makeText(getContext(), "Something went wrong. Please try again.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), R.string.something_went_wrong, Toast.LENGTH_SHORT).show();
                     }
-
-
                 }
                 break;
             case DialogInterface.BUTTON_POSITIVE:
@@ -112,18 +109,14 @@ public class LocationPreference extends EditTextPreference {
 
     private void requestCoarseLocationPermission(){
         Log.d("LocationPreference","Coarse Location Permission has not been granted. Requesting permission...");
-        if (ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.ACCESS_COARSE_LOCATION)){
-            Toast.makeText(getContext(), "Alarm needs your location to calculate the sunrise", Toast.LENGTH_SHORT).show();
-        } else{
+        if (!ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.ACCESS_COARSE_LOCATION)){
             ActivityCompat.requestPermissions(mActivity, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, COARSE_LOCATION);
         }
     }
 
     private void requestFineLocationPermission(){
         Log.d("LocationPreference", "Fine Location Permission has not been granted. Requesting permission...");
-        if (ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.ACCESS_FINE_LOCATION)){
-            Toast.makeText(getContext(), "Alarm needs your location to calculate the sunrise", Toast.LENGTH_SHORT).show();
-        } else{
+        if (!ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.ACCESS_FINE_LOCATION)){
             ActivityCompat.requestPermissions(mActivity, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, FINE_LOCATION);
         }
     }
@@ -133,16 +126,16 @@ public class LocationPreference extends EditTextPreference {
         if (requestCode == FINE_LOCATION){
             Log.d("LocationPreference", "Recieved response for fine location");
             if (grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
-                Toast.makeText(getContext(), "Permission granted for location", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), R.string.location_granted, Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(getContext(), "Permission denied for location", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), R.string.location_denied, Toast.LENGTH_SHORT).show();
             }
         } else if (requestCode == COARSE_LOCATION){
             Log.d("LocationPreference", "Received response for coarse location");
             if (grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
-                Toast.makeText(getContext(), "Permission granted for location", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), R.string.location_granted, Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(getContext(), "Permission denied for location", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), R.string.location_denied, Toast.LENGTH_SHORT).show();
             }
         }
     }
