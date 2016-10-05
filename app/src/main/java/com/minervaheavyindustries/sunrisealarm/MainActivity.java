@@ -14,7 +14,6 @@ import android.preference.PreferenceManager;
 import android.preference.RingtonePreference;
 import android.preference.SwitchPreference;
 import android.util.Log;
-import android.widget.Toast;
 
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -22,17 +21,14 @@ import org.joda.time.format.DateTimeFormatter;
 
 public class MainActivity extends PreferenceActivity {
 
-    private static Intent intent;
     private static AlarmManager alarmManager;
-    private static PendingIntent pendingIntent;
+    private static int ALARM_ID = 1117;
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         getFragmentManager().beginTransaction().replace(android.R.id.content, new PrefsFragment()).commit();
-        intent = new Intent(this, AlarmReceiver.class);
         alarmManager = (AlarmManager)getSystemService(ALARM_SERVICE);
-
     }
 
     public static class PrefsFragment extends PreferenceFragment implements SharedPreferences.OnSharedPreferenceChangeListener {
@@ -43,7 +39,6 @@ public class MainActivity extends PreferenceActivity {
             super.onCreate(savedInstanceState);
             PreferenceManager.setDefaultValues(getActivity(), R.xml.preferences, false);
             addPreferencesFromResource(R.xml.preferences);
-            updateAllSummaries();
         }
 
         @Override
@@ -51,7 +46,7 @@ public class MainActivity extends PreferenceActivity {
             super.onResume();
             Log.d("MainActivity", "onResume");
             getPreferenceManager().getSharedPreferences().registerOnSharedPreferenceChangeListener(this);
-            updateAllSummaries();
+            updateSummary("ringtone");
         }
 
         @Override
@@ -59,14 +54,6 @@ public class MainActivity extends PreferenceActivity {
             getPreferenceManager().getSharedPreferences().unregisterOnSharedPreferenceChangeListener(this);
             super.onPause();
         }
-
-        public void updateAllSummaries(){
-            updateSummary("ringtone");
-            updateSummary("offset");
-            updateSummary("location");
-        }
-
-
 
         public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key){
             Log.d("MainActivity", "SharedPreferenceChanged - " + key);
@@ -84,22 +71,16 @@ public class MainActivity extends PreferenceActivity {
             }
         }
 
-        public void showToast(String message){
-            Toast.makeText(getActivity(), message, Toast.LENGTH_SHORT).show();
-        }
-
         public void updateSummary(String key){
             SharedPreferences sp = getPreferenceManager().getSharedPreferences();
+            boolean alarmStatus = sp.getBoolean("alarm", false);
 
             switch(key){
                 case "alarm":
-                    boolean alarmStatus = sp.getBoolean("alarm", false);
                     if (alarmStatus){
                         updateAlarm();
-                        showToast("Alarm Set");
                     } else {
-                        if (pendingIntent != null){ alarmManager.cancel(pendingIntent); }
-                        showToast("Alarm Unset");
+                        cancelAlarm();
                     }
 
                 case "ringtone":
@@ -114,7 +95,7 @@ public class MainActivity extends PreferenceActivity {
                     } else {
                         rp.setSummary("Silent");
                     }
-                    updateAlarm();
+                    if (alarmStatus) { updateAlarm(); }
 
                 case "offset":
                     SeekBarPreference sbp = (SeekBarPreference)findPreference("offset");
@@ -131,26 +112,31 @@ public class MainActivity extends PreferenceActivity {
                         offsetSummaryMessage = String.valueOf(-sunriseOffset) + " " + minute + " before sunrise";
                     }
                     sbp.setSummary(offsetSummaryMessage);
-                    updateAlarm();
+                    if (alarmStatus) { updateAlarm(); }
 
                 case "location":
                     LocationPreference lp = (LocationPreference)findPreference("location");
                     String location = PreferenceManager.getDefaultSharedPreferences(this.getActivity()).getString("location", "38.897096, -77.036545");
-                    Log.d("MainActivity", location);
                     lp.setSummary(location);
-                    updateAlarm();
+                    if (alarmStatus) { updateAlarm(); }
                 default:
                     break;
             }
         }
 
+        private void cancelAlarm(){
+            Intent intent = new Intent(getActivity(), AlarmReceiver.class);
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), ALARM_ID, intent, 0);
+            alarmManager.cancel(pendingIntent);
+            pendingIntent.cancel();
+            Log.d("MainActivity", "Alarm has been cancelled");
+        }
+
         private void updateAlarm(){
             SharedPreferences sp = getPreferenceManager().getSharedPreferences();
             SwitchPreference switchPreference = (SwitchPreference)findPreference("alarm");
+            Intent intent = new Intent(getActivity(), AlarmReceiver.class);
 
-            if (pendingIntent != null){
-                alarmManager.cancel(pendingIntent);
-            }
             // set the alarm sound
             String ringtonePref = sp.getString("ringtone", "");
             Uri ringtoneUri = Uri.parse(ringtonePref);
@@ -170,12 +156,14 @@ public class MainActivity extends PreferenceActivity {
             sunriseLocal = sunriseLocal.plusMinutes(sunriseOffset);
 
             // Set the alarm itself
-            pendingIntent = PendingIntent.getBroadcast(getActivity(), 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), ALARM_ID, intent, PendingIntent.FLAG_CANCEL_CURRENT);
             alarmManager.set(AlarmManager.RTC_WAKEUP, sunriseLocal.getMillis(), pendingIntent);
 
             // Update Preference Summary
             DateTimeFormatter formatter = DateTimeFormat.forPattern("E, yyyy-MM-dd HH:mm:ss Z");
             switchPreference.setSummary(sunriseLocal.toString(formatter));
+            Log.d("MainActivity", "Alarm has been set");
         }
 
     }

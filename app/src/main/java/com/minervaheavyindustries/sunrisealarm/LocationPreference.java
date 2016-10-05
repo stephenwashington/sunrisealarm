@@ -7,6 +7,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.preference.EditTextPreference;
@@ -40,6 +41,12 @@ public class LocationPreference extends EditTextPreference {
         super.onPrepareDialogBuilder(builder);
         builder.setNeutralButton("Get Location", this);
         final EditText editText = getEditText();
+        SharedPreferences sp = getPreferenceManager().getSharedPreferences();
+
+        if (editText.getText().toString().equals("")){
+            editText.setText(sp.getString("location", "38.897096, -77.036545"));
+        }
+
         editText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -57,6 +64,7 @@ public class LocationPreference extends EditTextPreference {
                 if (validInput(currentInput)){
                     value = currentInput;
                 }
+
             }
         });
     }
@@ -76,13 +84,22 @@ public class LocationPreference extends EditTextPreference {
                     requestFineLocationPermission();
                 } else{
                     Log.d("LocationPreference", "Location permissions granted");
-                    Location loc = LocationUtilities.getLocation(mContext);
+                    Location loc = null;
+                    for (int i = 0; i < 2; i++){
+                        loc = LocationUtilities.getLocation(mContext);
+                    }
                     if (loc != null){
                         double latitude = loc.getLatitude();
                         double longitude = loc.getLongitude();
                         value = String.format(Locale.US, "%.5f, %.5f", latitude, longitude);
+                        Log.d("LocationPreference", value);
                         this.setText(value);
+                    } else {
+                        Log.d("LocationPreference", "Location came back null!");
+                        Toast.makeText(getContext(), "Something went wrong. Please try again.", Toast.LENGTH_SHORT).show();
                     }
+
+
                 }
                 break;
             case DialogInterface.BUTTON_POSITIVE:
