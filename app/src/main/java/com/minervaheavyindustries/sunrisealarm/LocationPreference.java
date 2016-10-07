@@ -16,7 +16,6 @@ import android.support.v4.app.ActivityCompat;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -77,13 +76,11 @@ public class LocationPreference extends EditTextPreference {
     public void onClick(DialogInterface dialog, int id){
         switch (id) {
             case DialogInterface.BUTTON_NEUTRAL:
-                Log.d("LocationPreference", "Acquiring new GPS...");
                 if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED){
                     requestCoarseLocationPermission();
                 } else if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
                     requestFineLocationPermission();
                 } else{
-                    Log.d("LocationPreference", "Location permissions granted");
                     Location loc = null;
                     for (int i = 0; i < 2; i++){
                         loc = LocationUtilities.getLocation(mContext);
@@ -94,7 +91,6 @@ public class LocationPreference extends EditTextPreference {
                         value = String.format(Locale.US, "%.5f, %.5f", latitude, longitude);
                         this.setText(value);
                     } else {
-                        Log.d("LocationPreference", "Location came back null!");
                         Toast.makeText(getContext(), R.string.something_went_wrong, Toast.LENGTH_SHORT).show();
                     }
                 }
@@ -108,14 +104,12 @@ public class LocationPreference extends EditTextPreference {
     }
 
     private void requestCoarseLocationPermission(){
-        Log.d("LocationPreference","Coarse Location Permission has not been granted. Requesting permission...");
         if (!ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.ACCESS_COARSE_LOCATION)){
             ActivityCompat.requestPermissions(mActivity, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, COARSE_LOCATION);
         }
     }
 
     private void requestFineLocationPermission(){
-        Log.d("LocationPreference", "Fine Location Permission has not been granted. Requesting permission...");
         if (!ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.ACCESS_FINE_LOCATION)){
             ActivityCompat.requestPermissions(mActivity, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, FINE_LOCATION);
         }
@@ -124,14 +118,12 @@ public class LocationPreference extends EditTextPreference {
     @TargetApi(23)
     public void onRequestPermissionResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults){
         if (requestCode == FINE_LOCATION){
-            Log.d("LocationPreference", "Recieved response for fine location");
             if (grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
                 Toast.makeText(getContext(), R.string.location_granted, Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(getContext(), R.string.location_denied, Toast.LENGTH_SHORT).show();
             }
         } else if (requestCode == COARSE_LOCATION){
-            Log.d("LocationPreference", "Received response for coarse location");
             if (grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
                 Toast.makeText(getContext(), R.string.location_granted, Toast.LENGTH_SHORT).show();
             } else {
